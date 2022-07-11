@@ -8,11 +8,11 @@ def SpecifyCoodinatesSinusoidal(lon, lat, lon_0=0, tile_h=29, tile_w=5, pixel=24
     world_x = 0.5 + (lon - lon_0)/360 * np.cos(np.radians(lat))
     world_y = lat / 180 - 0.5
 
-    local_x = (np.abs(world_x /(1/36)) - tile_h) * pixel
-    local_y = (np.abs(world_y /(1/18)) - tile_w) * pixel
+    row = (np.abs(world_y /(1/18)) - tile_w) * pixel
+    column = (np.abs(world_x /(1/36)) - tile_h) * pixel
 
     if int_return:
-        local_x = int(local_x)
-        local_y = int(local_y)
+        row = int(row)
+        column = int(column)
 
-    return local_x, local_y
+    return row, column
