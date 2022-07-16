@@ -1,1 +1,2 @@
 from .SpecifyCoodinatesSinusoidal import SpecifyCoodinatesSinusoidal
+from .MoveFunction import MoveFunction
