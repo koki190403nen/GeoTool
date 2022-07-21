@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding:uft-8 -*-
+# -*- coding : uft-8 -*-
 # CalcTempNormalParams.py: 気温の平年値パラメータを計算する
 #%%
 import numpy as np
@@ -10,7 +10,10 @@ def calc_temp_normal_params(
     temp_element='MeanTEMP',
     input_min_year=1991):
     # 処理
-    YearNormal_df = pd.DataFrame()  # 出力用 平年値param DataFrame
+
+    mu_ls =[]
+    sigma_ls=[]
+    doy_ls=[]
 
     # doyごとに平年値を算出
     for doy in np.arange(1, 365+1):
@@ -44,7 +47,9 @@ def calc_temp_normal_params(
         # 各統計量の算出
         mu = np.nanmean(all_value)
         sigma = np.nanstd(all_value, ddof=1)
-        YearNormal_df.loc[doy, 'doy'] = doy
-        YearNormal_df.loc[doy, f'{temp_element}_mu'] = mu
-        YearNormal_df.loc[doy, f'{temp_element}_sigma'] = sigma
-    return YearNormal_df
+
+        mu_ls.append(mu)
+        sigma_ls.append(sigma)
+        doy_ls.append(doy)
+    return np.array(mu_ls), np.array(sigma_ls), np.array(doy_ls)
+# %%
