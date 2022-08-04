@@ -26,7 +26,6 @@ class GetNDVIArr:
 
     # 緯度経度と画像座標の計算
     def get_proj(self, area_name):
-        area_name = 'Ibaraki'
         area_df = pd.read_csv(f'D:/ResearchData2/LevelExtra/TargetArea.csv')
 
         self.lat = area_df.query(f'Name=="{area_name}"')['Lat'].values[0]
@@ -36,7 +35,7 @@ class GetNDVIArr:
     
     # 指定地点のndviデータを抽出
     def sampling_1point(self, area_name):
-        self.GetProj(area_name)
+        self.get_proj(area_name)
         ndvi_arr = self.all_ndvi_img[self.img_y, self.img_x, :].astype(np.float32)
         return ndvi_arr
 # %%
