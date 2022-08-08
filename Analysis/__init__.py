@@ -1,4 +1,4 @@
-from .SpecifyCoodinatesSinusoidal import SpecifyCoodinatesSinusoidal
+from .SpecifyCoodinatesSinusoidal import SpecifyCoodinatesSinusoidal, calc_img_proj_epsg4326
 from .MoveFunction import MoveFunction
 from .CalcTempNormalParams import calc_temp_normal_params
 from .GetNDVIArr import GetNDVIArr
