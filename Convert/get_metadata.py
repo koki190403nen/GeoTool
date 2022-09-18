@@ -29,10 +29,12 @@ def get_metadata(in_geotiff_path, out_json_path=None):
     del src
 
     # dict化
-    out_dict['transform_rasterio'] = list(transform_rasterio)[:6]
-    out_dict['transform_gdal'] = transform_gdal
+    out_dict['transform'] = {}
+    out_dict['transform']['rasterio'] = list(transform_rasterio)[:6]
+    out_dict['transform']['gdal'] = transform_gdal
     out_dict['projection'] = proj
     out_dict['h'], out_dict['w'] = src_arr.shape
+    out_dict['dtype'] = str(src_arr.dtype)
 
     if out_json_path is not None:
         with open(out_json_path, 'w') as f:
