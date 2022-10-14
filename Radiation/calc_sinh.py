@@ -52,7 +52,3 @@ def calc_sinh(lat, lon, date, Ls=135):
 
     sinh = np.sin(np.deg2rad(lat)) * np.sin(np.deg2rad(delta)) + np.cos(np.deg2rad(lat))*np.cos(np.deg2rad(delta))*np.cos(np.deg2rad(omega))
     return sinh
-# %%
-calc_sinh(
-    lat=39, lon=139, 
-)
