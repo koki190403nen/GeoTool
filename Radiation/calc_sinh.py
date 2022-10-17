@@ -11,7 +11,7 @@ def calc_sinh(lat, lon, date, Ls=135):
 
     Args:
         lat (float or np.ndarray): 緯度lattide(°)
-        L (float or np.ndarray): 経度longitude(°)
+        lon (float or np.ndarray): 経度longitude(°)
         date(datetime.datetime): 日時
         Ls (float): 標準子午線の経度(明石市の経度(°)) Defaults to 135.
     
