@@ -234,7 +234,9 @@ class MultiWsiImage:
             self.out_df.loc[date_64, 'BI_std'] = self.bi_std  # BIの標準偏差
             self.out_df.loc[date_64, 'used_img'] = self.used_img_num  # 10分平均を算出するのに使った画像数
 
-            if base_date.minute==0:
+
+            # デバック用
+            if (base_date.hour==0)&(base_date.minute==0):
                 print(f'Processed:{base_date} | (now:{datetime.datetime.now()}')
 
 
