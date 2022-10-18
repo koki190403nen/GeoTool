@@ -236,7 +236,7 @@ class MultiWsiImage:
 
 
             # デバック用
-            if (base_date.hour==0)&(base_date.minute==0):
+            if (base_date.hour==12)&(base_date.minute==0):
                 print(f'Processed:{base_date} | (now:{datetime.datetime.now()}')
 
 
