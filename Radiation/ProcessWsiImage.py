@@ -3,6 +3,7 @@
 # judge_crow.py: カラスがいるかどうか判定する
 
 # %%
+from tkinter.tix import Tree
 import numpy as np
 from matplotlib import pyplot as plt
 import glob
@@ -26,7 +27,7 @@ class ProcessWsiImage(threading.Thread):
 
     """
 
-    def __init__(self, wsi_path=None, circle_2d=None, circle_area=None):
+    def __init__(self, wsi_path=None, circle_2d=None, circle_area=None, masking=True):
         """RGB画像からBI画像を作成する
         しきい値を設定することでカラス抜き画像や白飛び抜き画像を作成する
 
@@ -34,6 +35,7 @@ class ProcessWsiImage(threading.Thread):
             wsi_path (str, optional): 処理を行う全天画像. Defaults to None.
             circle_2d (Array like(2d), optional): マスキング用サークル画像. Defaults to None.
             circle_area (int): マスキング用サークルのピクセル数. Defaults to None
+            masking (bool): マスキングを実行するかどうか
 
         Attributes:
             .wsi_path (str)                         : 全天画像のパス
@@ -50,6 +52,7 @@ class ProcessWsiImage(threading.Thread):
             .used_area (int)                        : 計算に使用できるピクセル数
             .used_area_img (Array like (2d))        : 使用できるピクセルの二値画像
             .used_area_rate (float)                 : 使用できるピクセルの割合
+            .masking_flag (bool)                    : マスキングを実行するかどうか Default to True.
         """
         super().__init__()  # スレッドクラスをオーバーライド
         self.wsi_path       = wsi_path      # 全天画像のパスを保持
@@ -66,6 +69,7 @@ class ProcessWsiImage(threading.Thread):
         self.used_area      = None          # 使用できるピクセル数
         self.used_area_img  = None          # 使用できるピクセルの二値画像
         self.used_area_rate = None          # 使用できる面積の割合
+        self.masking_flag   = masking       # マスキングを実行するかどうか
 
     def run(self):
         """実行用メソッド
@@ -74,15 +78,12 @@ class ProcessWsiImage(threading.Thread):
         # 上限と下限を指定してbiを計算
         self.get_wsi_img(self.wsi_path)  # WSI画像を取得
         self.calc_bi_img()  # bi画像を作成
-        self.bi_masking_integration(min=15, max=250, area=0.95)  # BIをマスキング
-        
-        '''
-        self.detect_crow(15)  # カラス二値画像を保持
-        self.detect_sun(250)  # 太陽二値画像を保持
-        self.judge_crow(area_min=0.08, area_max=0.6)  # カラスの有無を判定
-        self.bi_masking(['crow', 'sun'])  # bi画像をマスキング
-        #self.bi_masking()
-        '''
+
+        if self.masking_flag:  # マスキングする場合
+            self.bi_masking_integration(min=15, max=250, area=0.95)  # BIをマスキング
+
+        else:  #マスキングしない場合
+            self.bi_no_masking()
 
     def get_wsi_img(self, path):
         """指定パスの全天画像をメモリに取り込む
@@ -111,6 +112,10 @@ class ProcessWsiImage(threading.Thread):
         )
         self.used_area_rate = np.nansum(self.used_area_img) / self.circle_area
         self.used_bi = self.used_area_rate>area
+    
+    def bi_no_masking(self):
+        self.masked_bi_img = np.where(self.circle_2d==1, self.bi_img, np.nan)
+        self.used_bi = True
 
     def calc_bi_img(self):
         """取り込んでいるWSIイメージからBI画像を算出
@@ -135,9 +140,9 @@ class ProcessWsiImage(threading.Thread):
     
     def detect_sun(self, threshold):
         """太陽を検出した二値画像を作成する
-
         Args:
             threshold(int): 画素値が指定以上の時太陽と判定する. Defaults to 250.
+
         Returns:
             Array like(2d, uint8): 太陽を1, それ以外を0とした二値画像
         """
@@ -185,23 +190,27 @@ class MultiWsiImage:
     def __init__(
         self,
         input_dir_path = 'E:/ResearchData4/Level1/wsi_202209/',
-        circle_img_path= 'E:/ResearchData4/Level1/circle_img/Mask75circle.tif'):
+        circle_img_path= 'E:/ResearchData4/Level1/circle_img/Mask75circle.tif',
+        masking=True):
         """WSI画像の10分平均処理
         BI10分平均値を計算する。マルチスレッド対応済み
 
         Args:
-            input_dir_path (str, optional): 元画像の保存先ディレクトリ. Defaults to 'E:/ResearchData4/Level1/wsi_202209/'.
-            circle_img_path (str, optional): マスク用画像(tif)のパス. Defaults to 'E:/ResearchData4/Level1/circle_img/Mask75circle.tif'
+            input_dir_path (str, optional)  : 元画像の保存先ディレクトリ. 
+            circle_img_path (str, optional) : マスク用画像(tif)のパス.
+            masking (bool)                  : マスキングを実行するかどうか Default to True.
+
         Attributes:
-            self.input_dir_path (str, path) : 元画像の保存先ディレクトリ
-            self.circle_img (Array like, 2d): マスク用画像の配列
-            self.circle_area (int)          : マスク用画像のピクセル数
-            self.bi_mean (float)            : 画像全体のBI平均
-            self.bi_std (float)             : 画像全体のBI標準偏差
-            self.h (int)                    : 画像の高さ
-            self.w (int)                    : 画像の幅
-            self.used_img_num (int)         : 10分平均作成に使用した画像の枚数
-            self.out_df (pandas.DataFrame)  : 出力用DataFrame
+            .input_dir_path (str, path)     : 元画像の保存先ディレクトリ
+            .circle_img (Array like, 2d)    : マスク用画像の配列
+            .circle_area (int)              : マスク用画像のピクセル数
+            .bi_mean (float)                : 画像全体のBI平均
+            .bi_std (float)                 : 画像全体のBI標準偏差
+            .h (int)                        : 画像の高さ
+            .w (int)                        : 画像の幅
+            .used_img_num (int)             : 10分平均作成に使用した画像の枚数
+            .out_df (pandas.DataFrame)      : 出力用DataFrame
+            .masking_flag (bool)            : マスキングを実行するかどうか Default to True.
         """
         
         self.input_dir_path = input_dir_path
@@ -212,6 +221,7 @@ class MultiWsiImage:
         self.h, self.w      = self.circle_img.shape
         self.used_img_num   = None
         self.out_df         = pd.DataFrame()
+        self.masking_flag   = masking
     
     def run(self, start, end, min_sun_height=5, min_used=1, lon=139.48, lat = 35.68):
         """バッチ処理を行う
@@ -263,7 +273,8 @@ class MultiWsiImage:
             pwi = ProcessWsiImage(
                 wsi_path    = get_img_path_ls[0],
                 circle_2d   = self.circle_img,
-                circle_area = self.circle_area
+                circle_area = self.circle_area,
+                masking     = self.masking_flag
             )
             pwi.start()
             threads.append(pwi)
