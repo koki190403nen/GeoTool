@@ -3,6 +3,7 @@
 # judge_crow.py: カラスがいるかどうか判定する
 
 # %%
+from turtle import circle
 import numpy as np
 from matplotlib import pyplot as plt
 import glob
@@ -10,6 +11,8 @@ import cv2
 import threading
 import datetime
 import pandas as pd
+import warnings
+warnings.simplefilter('ignore')
 if __name__=='__main__':
     from calc_sinh import calc_sinh
 else:
@@ -204,6 +207,24 @@ class MultiWsiImage:
             self.make_10min_img(basedate=basedate, threshold_area=threshold_area, min_used=min_used)
 
     
+    def set_df(self, df, basedate, circle_key, used_img_dict, masked_img_dict, min_used):
+        df.loc[basedate, f'BI_mean_{circle_key}'] = int(used_img_dict[circle_key])
+        if used_img_dict[circle_key] < min_used:
+            del masked_img_dict[circle_key]
+            df.loc[basedate,f'BI_mean_{circle_key}'] = np.nan
+            df.loc[basedate,f'BI_std_{circle_key}']  = np.nan
+            df.loc[basedate,f'BI_max_{circle_key}']  = np.nan
+            df.loc[basedate,f'BI_min_{circle_key}']  = np.nan
+        else:
+            convert_img = np.array(masked_img_dict[circle_key])
+            del masked_img_dict[circle_key]
+            df.loc[basedate,f'BI_mean_{circle_key}'] = np.nanmean(convert_img)
+            df.loc[basedate,f'BI_std_{circle_key}']  = np.nanstd(convert_img)
+            df.loc[basedate,f'BI_max_{circle_key}']  = np.nanmax(convert_img)
+            df.loc[basedate,f'BI_min_{circle_key}']  = np.nanmin(convert_img)
+        return df
+
+
     def make_10min_img(self, basedate, threshold_area=0.95, min_used=1):
         """10分平均画像作成用関数
 
@@ -245,31 +266,30 @@ class MultiWsiImage:
             # 
             for circle_key, [circle_img, img_judge] in thread.circle_bi_dict.items():
                 self.used_img_num=0
+                masked_img_ls = []
                 if img_judge:
                     masked_img_dict[circle_key].append(circle_img)  # 使用可能なら足す
                     used_img_dict[circle_key]+=1
-            
+        
+        set_df_threads = []
         # 各開口度ごとに統計量を算出
         for circle_key in self.circle_dict.keys():
-            self.out_df.loc[basedate, f'BI_usedimg_{circle_key}'] = int(used_img_dict[circle_key])
-            if used_img_dict[circle_key] < min_used:
-                self.out_df.loc[basedate,f'BI_mean_{circle_key}'] = np.nan
-                self.out_df.loc[basedate,f'BI_std_{circle_key}']  = np.nan
-                self.out_df.loc[basedate,f'BI_max_{circle_key}']  = np.nan
-                self.out_df.loc[basedate,f'BI_min_{circle_key}']  = np.nan
-            else:
-                convert_img = np.array(masked_img_dict[circle_key])
-                self.out_df.loc[basedate,f'BI_mean_{circle_key}'] = np.nanmean(convert_img)
-                self.out_df.loc[basedate,f'BI_std_{circle_key}']  = np.nanstd(convert_img)
-                self.out_df.loc[basedate,f'BI_max_{circle_key}']  = np.nanmax(convert_img)
-                self.out_df.loc[basedate,f'BI_min_{circle_key}']  = np.nanmin(convert_img)
+
+            set_df_thread = threading.Thread(
+                target=self.set_df,
+                args=(self.out_df, basedate, circle_key, used_img_dict, masked_img_dict, min_used)
+            )
+            set_df_thread.start()
+            set_df_threads.append(set_df_thread)
+        for set_df_thread in set_df_threads:
+            set_df_thread.join()
 
 
 # %% 処理部分
 if __name__=='__main__':
     start = datetime.datetime.now()
 
-    mwi = MultiWsiImage(circle_ls=[75, 80, 85], masking_flag=False)
+    mwi = MultiWsiImage(circle_ls=[75], masking_flag=False)
     masked_img_dict = mwi.run(
         start = datetime.datetime(2022, 9, 1, 0, 0, 0),
         end = datetime.datetime(2022, 9, 2, 0, 0, 1)
