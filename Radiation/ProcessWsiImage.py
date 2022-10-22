@@ -289,10 +289,10 @@ class MultiWsiImage:
 if __name__=='__main__':
     start = datetime.datetime.now()
 
-    mwi = MultiWsiImage(circle_ls=[75], masking_flag=False)
+    mwi = MultiWsiImage(circle_ls=[50, 55, 60, 65, 70, 75, 80, 85, 90], masking_flag=False)
     masked_img_dict = mwi.run(
         start = datetime.datetime(2022, 9, 1, 0, 0, 0),
-        end = datetime.datetime(2022, 9, 2, 0, 0, 1)
+        end = datetime.datetime(2022, 9, 30, 0, 0, 1)
         )
 
     end = datetime.datetime.now()
