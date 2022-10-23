@@ -208,7 +208,7 @@ class MultiWsiImage:
 
     
     def set_df(self, df, basedate, circle_key, used_img_dict, masked_img_dict, min_used):
-        df.loc[basedate, f'BI_mean_{circle_key}'] = int(used_img_dict[circle_key])
+        df.loc[basedate, f'BI_usedimg_{circle_key}'] = int(used_img_dict[circle_key])
         if used_img_dict[circle_key] < min_used:
             del masked_img_dict[circle_key]
             df.loc[basedate,f'BI_mean_{circle_key}'] = np.nan
@@ -284,18 +284,47 @@ class MultiWsiImage:
         for set_df_thread in set_df_threads:
             set_df_thread.join()
 
+# %%
+def split_sort_df(in_df, circle_ls, save_header):
+    usedimg_df = pd.DataFrame()
+    mean_df = pd.DataFrame()
+    std_df = pd.DataFrame()
+    max_df = pd.DataFrame()
+    min_df = pd.DataFrame()
+    for circle_angle in circle_ls:
+        usedimg_df[circle_angle] = in_df[f'BI_usedimg_{circle_angle}']
+        mean_df[circle_angle] = in_df[f'BI_mean_{circle_angle}']
+        std_df[circle_angle] = in_df[f'BI_std_{circle_angle}']
+        max_df[circle_angle] = in_df[f'BI_max_{circle_angle}']
+        min_df[circle_angle] = in_df[f'BI_min_{circle_angle}']
+
+        usedimg_df.to_csv(f'{save_header}_usedimg.csv')
+        mean_df.to_csv(f'{save_header}_mean.csv')
+        std_df.to_csv(f'{save_header}_std.csv')
+        max_df.to_csv(f'{save_header}_max.csv')
+        min_df.to_csv(f'{save_header}_min.csv')
+    return usedimg_df, mean_df, std_df, max_df, min_df
 
 # %% 処理部分
 if __name__=='__main__':
     start = datetime.datetime.now()
 
-    mwi = MultiWsiImage(circle_ls=[50, 55, 60, 65, 70, 75, 80, 85, 90], masking_flag=False)
+    circle_ls = [50, 55, 60, 65, 70, 75, 80, 85, 90]  # 開口角のリスト
+    circle_ls = [85]
+
+
+    mwi = MultiWsiImage(
+        input_dir_path=f'E:/ResearchData4/Level1/wsi_202209/',
+        circle_dir='E:/ResearchData4/Level1/circle_img/',
+        circle_ls=circle_ls,
+        masking_flag=False)
     masked_img_dict = mwi.run(
-        start = datetime.datetime(2022, 9, 1, 0, 0, 0),
-        end = datetime.datetime(2022, 9, 30, 0, 0, 1)
+        start = datetime.datetime(2022, 9, 2, 9, 0, 0),
+        end = datetime.datetime(2022, 9, 2, 10, 0, 1)
         )
 
     end = datetime.datetime.now()
     print(f'time :{(end - start).total_seconds()}s')
 
-    # mwi.out_df.to_csv('test.csv')  # 結果の出力
+    split_sort_df(mwi.out_df, circle_ls , '../../../python_test/test')  # 結果の出力
+
