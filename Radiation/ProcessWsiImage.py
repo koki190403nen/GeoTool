@@ -310,21 +310,23 @@ if __name__=='__main__':
     start = datetime.datetime.now()
 
     circle_ls = [50, 55, 60, 65, 70, 75, 80, 85, 90]  # 開口角のリスト
-    circle_ls = [85]
+    #circle_ls = [85]
 
 
     mwi = MultiWsiImage(
-        input_dir_path=f'E:/ResearchData4/Level1/wsi_202209/',
-        circle_dir='E:/ResearchData4/Level1/circle_img/',
+        input_dir_path=f'T:/Uda/wsi_202209/',
+        circle_dir='T:/Uda/circle_img/',
         circle_ls=circle_ls,
         masking_flag=False)
     masked_img_dict = mwi.run(
-        start = datetime.datetime(2022, 9, 2, 9, 0, 0),
-        end = datetime.datetime(2022, 9, 2, 10, 0, 1)
+        start = datetime.datetime(2022, 8, 1, 0, 0, 0),
+        end = datetime.datetime(2022, 9, 1, 0, 0, 1)
         )
 
     end = datetime.datetime.now()
     print(f'time :{(end - start).total_seconds()}s')
 
-    split_sort_df(mwi.out_df, circle_ls , '../../../python_test/test')  # 結果の出力
+    split_sort_df(mwi.out_df, circle_ls , '../../python_test/wsi_test')  # 結果の出力
 
+
+# %%
