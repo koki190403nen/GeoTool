@@ -29,13 +29,13 @@ class mR95pBase:
             datetime.datetime(normal_end_year, 12, 31, 1),
             datetime.timedelta(days=1)
             ))
-        self.mR95pin = None  # mR95pin
+        self.mRRwn95 = None  # mRRwn95
         self.PPT_mean = None  # 平年値の計算
         self.mR95p = None  # 月別のmR95p(mm)
         self.mR95pT = None  # 月別のmR95pを30年平均降水量で正規化
 
-    def calc_mR95pin(self, rain30_arr, window_half=7, min_sample_size=30, Rnnmm=10):
-        """各平年値(mR95pin, PPT)を計算する
+    def calc_mRRwn95(self, rain30_arr, window_half=7, min_sample_size=30, Rnnmm=10):
+        """各平年値(mRRwn95, PPT)を計算する
 
         Args:
             rain30_arr (_type_): 30年平年値を算出するために使用するデータ
@@ -54,17 +54,17 @@ class mR95pBase:
             no366_ppt_arr.reshape(-1, 365)[:, :window_half]
         ], axis=1)
         
-        r95pin_ls = []
+        RRwn95_ls = []
         for i in range(365):
             target_period = clean_ppt_arr[:, i:i+window_half*2+1]
             if len(target_period[target_period!=0])<min_sample_size:
-                r95pin = Rnnmm
+                RRwn95 = Rnnmm
             else:
-                r95pin = np.percentile(target_period[target_period!=0], 95)
-            r95pin_ls.append(r95pin)
-        r95pin_ls.append(r95pin)  # DOY366用のデータを入れる
-        self.mR95pin = np.array(r95pin_ls)
-        self.mR95pin[self.mR95pin<Rnnmm] = Rnnmm
+                RRwn95 = np.percentile(target_period[target_period!=0], 95)
+            RRwn95_ls.append(RRwn95)
+        RRwn95_ls.append(RRwn95)  # DOY366用のデータを入れる
+        self.mRRwn95 = np.array(RRwn95_ls)
+        self.mRRwn95[self.mRRwn95<Rnnmm] = Rnnmm
 
         return self
     
@@ -72,7 +72,7 @@ class mR95pBase:
         pass
 
     def calc_normalyear(self, rain30_arr, window_half=7, min_sample_size=30, Rnnmm=10):
-        """各平年値(mR95pinと期間別平均総降水量)を計算する
+        """各平年値(mRRwn95と期間別平均総降水量)を計算する
 
         Args:
             rain30_arr (Array like): 平年値計算に使用する降水量データ(30年分)
@@ -81,18 +81,18 @@ class mR95pBase:
             Rnnmm (float): ユーザー定義の最低豪雨しきい値. Defaults to 10.
 
         """
-        self.calc_mR95pin(rain30_arr, window_half, min_sample_size, Rnnmm)
+        self.calc_mRRwn95(rain30_arr, window_half, min_sample_size, Rnnmm)
         self.calc_PPT_mean(rain30_arr)
         return self
 
-    def set_normalyear(self, r95pin, ppt_mean):
+    def set_normalyear(self, RRwn95, ppt_mean):
         """平年値がすでに計算済みの時, クラスにセットする
 
         Args:
-            r95pin (Array like (1D, 366)): DOY別95%ileしきい値
+            RRwn95 (Array like (1D, 366)): DOY別95%ileしきい値
             ppt_mean (Array like): 期間別平均総降水量
         """
-        self.mR95pin = r95pin
+        self.mRRwn95 = RRwn95
         self.PPT_mean = ppt_mean
         return self
     
@@ -107,7 +107,7 @@ class mR95pBase:
         Returns:
             Array like: 入力降水量データから求められたmR95pT
         """
-        threshold_arr = self.mR95pin[start_doy-1:end_doy-1]
+        threshold_arr = self.mRRwn95[start_doy-1:end_doy-1]
         mR95p = np.nanmean(rain_arr[rain_arr>=threshold_arr])
         PPT_mean = np.nanmean(self.PPT_mean[start_doy-1:end_doy-1])
         return mR95p / PPT_mean
@@ -165,7 +165,7 @@ class mR95pMonthly(mR95pBase):
         start_year = int(year_unique[0])
         end_year = int(year_unique[-1])
         R95p_ls = []
-        threshold_arr = self.mR95pin[list((doy_arr-1).astype(int))]
+        threshold_arr = self.mRRwn95[list((doy_arr-1).astype(int))]
         for year in range(start_year, end_year+1):
             for month in range(1, 12+1):
                 over_rain_arr = np.where(
@@ -188,5 +188,5 @@ if __name__=='__main__':
     mr95mon = mR95pMonthly(1991, 2020)
     res = mr95mon.calc_normalyear(normal_ppt, Rnnmm=10).calc_mR95pT(target_ppt, 1991, 2020)
     
-    plt.bar(range(366), res.mR95pin)
+    plt.bar(range(366), res.mRRwn95)
     plt.show()
