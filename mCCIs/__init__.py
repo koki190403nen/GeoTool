@@ -1,1 +1,1 @@
-from .mR95p import mR95pMonthly
+from .mR95pMonthly1D import mR95pMonthly1D
