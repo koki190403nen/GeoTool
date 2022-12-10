@@ -76,11 +76,8 @@ class mR95pMonthly1D(mR95pMonthlyBase):
                 R95p = np.nansum(over_rain_arr)
                 R95p_ls.append(R95p)
         self.mR95p = np.array(R95p_ls)
-        self.mR95pT = np.where(
-            np.isnan(self.PPT_mean),
-            0,
-            (self.mR95p.reshape(-1, 12)/self.PPT_mean).flatten()
-            )  # mR95p/PPT_meanを計算
+        self.mR95pT =(self.mR95p.reshape(-1, 12)/self.PPT_mean).flatten()  # mR95p/PPT_meanを計算
+        self.mR95pT = np.where(~np.isnan(self.mR95pT), self.mR95pT, 0)
         return self
 
 # %%
