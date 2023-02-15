@@ -188,6 +188,31 @@ class Raster2Dict:
         }
 
         return prcptot_dict
+    
+
+    def get_mR95pT(self):
+        print('Import mR95pT values (16 days) ...')
+        h,w = 1600, 1500
+        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
+        
+        mR95pT_date_arr = pd.to_datetime(
+            [f'{year}/{str(doy).zfill(3)}' for year in range(1981, 2021+1) for doy in range(1, 366, 16)]
+            )
+        mR95pT_value_ls = []
+
+        for date in mR95pT_date_arr:
+            get_img = np.fromfile(
+                f'D:/ResearchData3/Level4/mCCIs/MOD/mR95pT/mR95pT.A{date.strftime("%Y%j")}.float64_h1600w1500.raw',
+                count=h*w, dtype=np.float64
+            ).reshape(h,w)
+            mR95pT_value_ls.append(get_img[row, col])
+
+        mR95pT_dict = {
+            'date': list(mR95pT_date_arr.strftime('%Y/%m/%d').values),
+            'values': mR95pT_value_ls
+        }
+        self.dataset_dict['mR95pT_MOD16'] = mR95pT_dict
+        return mR95pT_dict
 # %%
 if __name__=='__main__':
     r2d = Raster2Dict(lat=-17.215, lon=27.424)
