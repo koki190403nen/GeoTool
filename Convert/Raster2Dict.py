@@ -25,6 +25,8 @@ class Raster2Dict:
         self.get_PPT()
         self.get_LULC()
         self.get_CDD()
+        self.get_mR95pT_16()
+        self.get_VZI_Mon()
 
         return self.dataset_dict
     
@@ -190,7 +192,7 @@ class Raster2Dict:
         return prcptot_dict
     
 
-    def get_mR95pT(self):
+    def get_mR95pT_16(self):
         print('Import mR95pT values (16 days) ...')
         h,w = 1600, 1500
         row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
@@ -213,6 +215,28 @@ class Raster2Dict:
         }
         self.dataset_dict['mR95pT_MOD16'] = mR95pT_dict
         return mR95pT_dict
+
+    def get_VZI_Mon(self):
+        print('Import mR95pT values (16 days) ...')
+        h,w = 1600, 1500
+        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
+        
+        vzi_date_ls = pd.date_range('2001/1/1', '2020/12/31', freq='MS')+datetime.timedelta(days=14)
+        vzi_value_ls = []
+
+        for date in vzi_date_ls:
+            get_img = np.fromfile(
+                f'D:/ResearchData3/Level4/VZI/Monthly/VZI.B{date.strftime("%Y%m")}.float64_h1600w1500.raw',
+                count=h*w, dtype=np.float64
+            ).reshape(h,w)
+            vzi_value_ls.append(get_img[row, col])
+
+        vzi_dict = {
+            'date': list(vzi_date_ls.strftime('%Y/%m/%d').values),
+            'values': vzi_value_ls
+        }
+        self.dataset_dict['VZI_Mon'] = vzi_dict
+        return vzi_dict
 # %%
 if __name__=='__main__':
     r2d = Raster2Dict(lat=-17.215, lon=27.424)
