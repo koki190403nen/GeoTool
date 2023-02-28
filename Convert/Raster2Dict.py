@@ -11,233 +11,98 @@ import json
 
 # %%
 class Raster2Dict:
-    def __init__(self, lat, lon):
+    def __init__(self, lat, lon, area_name):
+        """指定した座標のデータをcsvにまとめる
+
+        Args:
+            lat (float): 指定したい緯度
+            lon (float): 指定したい経度
+            area_name (str): 地点名
+        """
         self.lat=lat
         self.lon=lon
-        self.dataset_dict={
-            'meta':{'lat':lat, 'lon':lon}
-        }
-    
+        self.meta_csv_path = 'C:/Users/koki1/Google ドライブ/develop/ForReseach/sample/dataset/meta.csv'
+
+        try:
+            self.meta_df = pd.read_csv(self.meta_csv_path)
+        except(FileNotFoundError):
+            self.meta_df = pd.DataFrame()
+
+        self.meta_df.loc[area_name, 'lat'] = lat
+        self.meta_df.loc[area_name, 'lon'] = lon
+        self.meta_df.to_csv(self.meta_csv_path)
+
+        self.h, self.w  = 1600, 1500
+        self._convert_row_col()  # lat_lon -> row_col
+
+
+        # データ本体の記録のための前処理
+        self.date_arr = pd.to_datetime(
+            [f'{year}/{doy}' for year in range(2001, 2020+1) for doy in range(1, 366, 16)],
+            format="%Y/%j"
+        )
+        self.dataset_df     = pd.DataFrame(index=self.date_arr)
+
     def capture(self):
-        self.get_mR95pT()
-        self.get_R95pT()
-        self.get_NDVI()
-        self.get_PPT()
-        self.get_LULC()
-        self.get_CDD()
-        self.get_mR95pT_16()
-        self.get_VZI_Mon()
 
-        return self.dataset_dict
-    
-    def get_mR95pT(self):
-        print('Import mR95pT values ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        
-        mR95pT_date_arr = pd.to_datetime(
-            [f'{year}/{month}' for year in range(1981, 2021+1) for month in range(1, 12+1)]
+        # mR95pTの取得
+        self.get_index(
+            key     = 'mR95pT',
+            dir     = 'D:/ResearchData3/Level4/MOD16days/CCIs/mR95pT/',
+            dtype   = 'float64'
             )
-        mR95pT_value_ls = []
+        
+        # SPI3の取得
+        self.get_index(
+            key     = 'SPI3',
+            dir     = 'D:/ResearchData3/Level4/MOD16days/SPI3/',
+            dtype   = 'float32'
+        )
 
-        for date in mR95pT_date_arr:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level4/mCCIs/Monthly/mR95pT/mR95pT.B{date.strftime("%Y%m")}.float64_h1600w1500.raw',
-                count=h*w, dtype=np.float64
-            ).reshape(h,w)
-            mR95pT_value_ls.append(get_img[row, col])
+        # DayLSTZの取得
+        self.get_index(
+            key     = 'DayZ',
+            dir     = 'D:/ResearchData3/Level4/MOD16days/LST/DayZ/',
+            dtype   = 'float32',
+        )
 
-        mR95pT_dict = {
-            'date': list(mR95pT_date_arr.strftime('%Y/%m/%d').values),
-            'values': mR95pT_value_ls
-        }
-        self.dataset_dict['mR95pT'] = mR95pT_dict
-        return mR95pT_dict
+        # VZIの取得
+        self.get_index(
+            key     = 'VZI',
+            dir     = 'D:/ResearchData3/Level4/MOD16days/VZI/',
+            dtype   = 'float32'
+        )
+
+        return self.dataset_df
     
-    def get_R95pT(self):
-        print('Import R95pT values ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
+    def get_index(self, key, dir, dtype):
+        """指定したインデックスを取得し、self.dataset_dfにまとめる
+
+        Args:
+            key (str): インデックス名
+            dir (str (path)): 保存先ディレクトリのパス
+            dtype (str): データのdtype
+
+        Returns:
+            _type_: _description_
+        """
+        print(f'Getting {key} has initialized...')
+        all_img_arr = np.zeros((self.h, self.w, len(self.date_arr)), dtype=np.float32)
+        for c, date in enumerate(self.date_arr):
+            get_img = np.fromfile(
+                f'{dir}/{key}.A{date.strftime("%Y%j")}.{dtype}_h1600w1500.raw',
+                count=self.h * self.w, dtype=dtype
+            ).reshape(self.h, self.w).astype(np.float32)
+            all_img_arr[:,:,c] = get_img
         
-        R95pT_value_ls = []
-        R95pT_date_arr = pd.to_datetime(
-            [f'{year}/{month}' for year in range(1981, 2021+1) for month in range(1, 12+1)]
-            )
-        for date in R95pT_date_arr:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level4/CCIs/Monthly/R95pT/R95pT.B{date.strftime("%Y%m")}.float64_h1600w1500.raw',
-                count=h*w, dtype=np.float64
-            ).reshape(h,w)
+        self.dataset_df[key] = all_img_arr[self.row, self.col, :]
+        return self.dataset_df
 
-            R95pT_value_ls.append(get_img[row, col])
-        
-        R95pT_dict = {
-            'date':list(R95pT_date_arr.strftime('%Y/%m/%d').values),
-            'values':R95pT_value_ls
-        }
-        self.dataset_dict['R95pT'] = R95pT_dict
-        return R95pT_dict
-    
-    def get_NDVI(self):
+    def _convert_row_col(self):
+        self.row, self.col = int((self.lat - 40) / (-0.05)), int((self.lon - (-20)) / (0.05))
+        return self.row, self.col
 
-        print('Import NDVI values ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        ndvi_date_arr = pd.to_datetime(
-            [
-                datetime.datetime.strptime(f'{year}/{str(doy).zfill(3)}', '%Y/%j')
-                    for year in range(2001, 2020+1) for doy in range(1, 366+1, 16)])
-        ndvi_value_ls = []
-        for date in ndvi_date_arr:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level3/MOD13C1_RAW/MOD13C1.A{date.strftime("%Y%j")}.int16_h1600w1500.raw',
-                count=h*w, dtype=np.int16
-            ).reshape(h,w)
-            ndvi_value_ls.append(get_img[row, col]/10000)
-
-        ndvi_dict = {
-            'date': list(ndvi_date_arr.strftime('%Y/%m/%d').values),
-            'values':ndvi_value_ls
-        }
-        self.dataset_dict['NDVI'] = ndvi_dict
-        return ndvi_dict
-
-    def get_PPT(self):
-        print('Import PPT values...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        ppt_date_arr = pd.to_datetime(np.arange(
-            datetime.datetime(1981, 1, 1),
-            datetime.datetime(2021, 12, 31, 1),
-            datetime.timedelta(days=1)
-        ))
-        ppt_value_ls=[]
-
-        for date in ppt_date_arr:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level3/chirps005_RAW_f32/chirps_005.A{date.strftime("%Y%j")}.float32_h1600w1500.raw',
-                count=h*w, dtype=np.float32
-            ).reshape(h,w).astype(np.float64)
-            ppt_value_ls.append(get_img[row, col])
-        
-        ppt_dict = {
-            'date': list(ppt_date_arr.strftime('%Y/%m/%d').values),
-            'values': ppt_value_ls
-        }
-        self.dataset_dict['PPT'] = ppt_dict
-        return ppt_dict
-    
-    def get_LULC(self):
-        print('Import LULC ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        lulc_date_ls = [year for year in range(2002, 2019)]
-        lulc_ls = []
-
-        for year in lulc_date_ls:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level3/MCD12C1_RAW/MCD12C1.A{year}001.uint8_h1600w1500.raw',
-                count=h*w,dtype=np.uint8
-            ).reshape(h,w).astype(np.float64)
-            lulc_ls.append(get_img[row, col])
-        
-        lulc_dict = {
-            'date': lulc_date_ls,
-            'values': lulc_ls
-        }
-        self.dataset_dict['LULC'] = lulc_dict
-        return lulc_dict
-    
-    def get_CDD(self):
-        print('Import CDD ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        cdd_date_ls = pd.date_range('1981/1/1', '2021/12/31', freq='MS')+datetime.timedelta(days=14)
-        cdd_ls = []
-
-        for date in cdd_date_ls:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level4/CCIs/Monthly/CDD/CDD.B{date.strftime("%Y%m")}.float64_h1600w1500.raw',
-                count=h*w, dtype=np.float64
-            ).reshape(h,w)
-            cdd_ls.append(get_img[row, col])
-
-        cdd_dict = {
-            'date':list(cdd_date_ls.strftime('%Y/%m/%d').values),
-            'values': cdd_ls
-        }
-
-        self.dataset_dict['CDD'] = cdd_dict
-
-        return cdd_dict
-    
-    def get_PRCPTOT(self):
-        print('Import PRCPTOT ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        prcptot_date_ls = pd.date_range('1981/1/1', '2021/12/31', freq='MS')+datetime.timedelta(days=14)
-        prcptot_ls = []
-        for date in prcptot_date_ls:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level4/CCIs/Monthly/PRCPTOT/PRCPTOT.B{date.strftime("%Y%m")}.float64_h1600w1500.raw',
-                count=h*w, dtype=np.float64
-            ).reshape(h,w)
-            prcptot_ls.append(get_img[row, col])
-        
-        prcptot_dict = {
-            'date':list(prcptot_date_ls.strftime('%Y/%m/%d').values),
-            'values':prcptot_ls
-        }
-
-        return prcptot_dict
-    
-
-    def get_mR95pT_16(self):
-        print('Import mR95pT values (16 days) ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        
-        mR95pT_date_arr = pd.to_datetime(
-            [f'{year}/{str(doy).zfill(3)}' for year in range(1981, 2021+1) for doy in range(1, 366, 16)]
-            )
-        mR95pT_value_ls = []
-
-        for date in mR95pT_date_arr:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level4/mCCIs/MOD/mR95pT/mR95pT.A{date.strftime("%Y%j")}.float64_h1600w1500.raw',
-                count=h*w, dtype=np.float64
-            ).reshape(h,w)
-            mR95pT_value_ls.append(get_img[row, col])
-
-        mR95pT_dict = {
-            'date': list(mR95pT_date_arr.strftime('%Y/%m/%d').values),
-            'values': mR95pT_value_ls
-        }
-        self.dataset_dict['mR95pT_MOD16'] = mR95pT_dict
-        return mR95pT_dict
-
-    def get_VZI_Mon(self):
-        print('Import mR95pT values (16 days) ...')
-        h,w = 1600, 1500
-        row, col = int((self.lat-(40)) / (-0.05)), int((self.lon-(-20)) / (0.05))
-        
-        vzi_date_ls = pd.date_range('2001/1/1', '2020/12/31', freq='MS')+datetime.timedelta(days=14)
-        vzi_value_ls = []
-
-        for date in vzi_date_ls:
-            get_img = np.fromfile(
-                f'D:/ResearchData3/Level4/VZI/Monthly/VZI.B{date.strftime("%Y%m")}.float64_h1600w1500.raw',
-                count=h*w, dtype=np.float64
-            ).reshape(h,w)
-            vzi_value_ls.append(get_img[row, col])
-
-        vzi_dict = {
-            'date': list(vzi_date_ls.strftime('%Y/%m/%d').values),
-            'values': vzi_value_ls
-        }
-        self.dataset_dict['VZI_Mon'] = vzi_dict
-        return vzi_dict
 # %%
-if __name__=='__main__':
-    r2d = Raster2Dict(lat=-17.215, lon=27.424)
-    cdd_dict = r2d.get_PRCPTOT()
+r2d = Raster2Dict(-17.215, 27.424, 'Zambia2')
+r2d.capture()
+# %%
