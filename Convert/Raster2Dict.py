@@ -73,8 +73,25 @@ class Raster2Dict:
             dtype   = 'float32'
         )
 
-        return self.dataset_df
+        # DayLSTの取得
+        self.get_index(
+            key     = 'DayLST',
+            dir     = 'D:/ResearchData3/Level3/MOD11C4/DayLST/',
+            dtype   = 'float32'
+        )
+
+        # MaxTEMPの取得
+        self.get_index(
+            key     = 'MaxTemp',
+            dir     = 'D:/ResearchData3/Level3/CPCTemp/MaxTEMP/',
+            dtype   = 'float32'
+        )
     
+        return self.dataset_df
+
+
+
+
     def get_index(self, key, dir, dtype):
         """指定したインデックスを取得し、self.dataset_dfにまとめる
 
@@ -103,6 +120,7 @@ class Raster2Dict:
         return self.row, self.col
 
 # %%
-r2d = Raster2Dict(-17.215, 27.424, 'Zambia2')
-r2d.capture()
-# %%
+if __name__=='__init__':
+    r2d = Raster2Dict(-17.215, 27.424, 'Zambia2')
+    r2d.capture()
+    r2d.dataset_df.to_csv('../../sample/dataset/Zambia2.csv')
