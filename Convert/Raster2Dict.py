@@ -21,12 +21,14 @@ class Raster2Dict:
         """
         self.lat=lat
         self.lon=lon
-        self.meta_csv_path = 'C:/Users/koki1/Google ドライブ/develop/ForReseach/sample/dataset/meta.csv'
 
+        # メタデータの保存
+        self.meta_csv_path = 'C:/Users/koki1/Google ドライブ/develop/ForReseach/sample/dataset/meta.csv'
         try:
             self.meta_df = pd.read_csv(self.meta_csv_path)
         except(FileNotFoundError):
             self.meta_df = pd.DataFrame()
+
 
         self.meta_df.loc[area_name, 'lat'] = lat
         self.meta_df.loc[area_name, 'lon'] = lon
@@ -86,6 +88,13 @@ class Raster2Dict:
             dir     = 'D:/ResearchData3/Level3/CPCTemp/MaxTEMP/',
             dtype   = 'float32'
         )
+
+        # NDVIの取得
+        self.get_index(
+            key     = 'NDVI',
+            dir     = 'D:/ResearchData3/Level3/MOD13C1/',
+            dtype   = 'int16'
+        )
     
         return self.dataset_df
 
@@ -120,7 +129,7 @@ class Raster2Dict:
         return self.row, self.col
 
 # %%
-if __name__=='__init__':
+if __name__=='__main__':
     r2d = Raster2Dict(-17.215, 27.424, 'Zambia2')
     r2d.capture()
     r2d.dataset_df.to_csv('../../sample/dataset/Zambia2.csv')
