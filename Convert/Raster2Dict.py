@@ -91,7 +91,7 @@ class Raster2Dict:
 
         # NDVIの取得
         self.get_index(
-            key     = 'NDVI',
+            key     = 'MOD13C1',
             dir     = 'D:/ResearchData3/Level3/MOD13C1/',
             dtype   = 'int16'
         )
@@ -133,3 +133,5 @@ if __name__=='__main__':
     r2d = Raster2Dict(-17.215, 27.424, 'Zambia2')
     r2d.capture()
     r2d.dataset_df.to_csv('../../sample/dataset/Zambia2.csv')
+
+# %%
