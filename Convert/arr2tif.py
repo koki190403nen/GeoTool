@@ -15,9 +15,9 @@ def arr2tif(
     """np.ndarrayをgeotiff形式で保存
 
     Args:
-        arr (np.ndarray): データセット本体
-        out_file_path (str): 出力ファイルパス
-        geotrans (set(lon, Δlon, 0, lat, 0, -Δlat)): 左上ピクセルの座標情報
+        arr (np.ndarray): データセット本体.\n
+        out_file_path (str): 出力ファイルパス.\n
+        geotrans (set(lon, Δlon, 0, lat, 0, -Δlat)): 左上ピクセルの座標情報\n
         projection (int or str): 座標系.int型ならEPSGコード,strならWktコード. Defaults to 4326.
     """
 

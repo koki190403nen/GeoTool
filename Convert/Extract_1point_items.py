@@ -23,11 +23,12 @@ def Extract_1point_items(lat, lon, area_name, sample_dir_path='./sample/dataset/
              'PRCPTOT' : ['ccis/PRCPTOT',   'float64'],
              'NDVI_Smoothed' : ['NDVI_Smoothed',  'float64'],
              'VZI'     : ['VZI',            'float32'],
-             'STI'     : ['TEMP/STI',       'float32'],
-             'PAR'     : ['PAR', 'float32'],
+             'STI'     : ['STI',            'float32'],
+             'SparI'   : ['SparI',          'float32'],
+             'PAR'     : ['PAR/JASMES',     'float32'],
              'MeanTEMP': ['TEMP/MeanTEMP',  'float32'],
-             'CLD'     : ['CLD/sp005',      'float32'],
-             'DTR'     : ['ccis/DTR',       'float32']
+             'DTR'     : ['ccis/DTR',       'float32'],
+             'MeanLST' : ['LST/MeanLST',    'float32'],
              }
     out_df = pd.DataFrame(columns=meta_dict.keys())
 
