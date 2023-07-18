@@ -10,7 +10,7 @@ import numpy as np
 def arr2tif(
     arr:np.ndarray,
     out_file_path,
-    geotrans, projection=4326,
+    geotrans=(-20, 0.05, 0, 40, 0, -0.05), projection=4326,
     ):
     """np.ndarrayをgeotiff形式で保存
 
