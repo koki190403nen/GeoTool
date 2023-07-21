@@ -50,4 +50,5 @@ class Bin2Cont:
         return self
     
     def calc_inverse(self):
-        return np.where(self.serial>0, self.len_arr-self.serial+1, 0)
+        self.inv_arr = np.where(self.serial>0, self.len_arr-self.serial+1, 0)
+        return self
