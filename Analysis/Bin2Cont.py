@@ -48,3 +48,6 @@ class Bin2Cont:
                 
         self.len_arr = np.array(out_ls[::-1])
         return self
+    
+    def calc_inverse(self):
+        return np.where(self.serial>0, self.len_arr-self.serial+1, 0)
