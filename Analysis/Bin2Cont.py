@@ -17,7 +17,7 @@ class Bin2Cont:
             pass
         else:
             self.in_arr = in_arr
-        self.calc_serial().calc_length()
+        self.calc_serial().calc_length().calc_inverse()
         return self
 
     def calc_serial(self):
@@ -52,3 +52,17 @@ class Bin2Cont:
     def calc_inverse(self):
         self.inv_arr = np.where(self.serial>0, self.len_arr-self.serial+1, 0)
         return self
+    
+def osero(arr):
+    """バイナリデータで、前後が1で観測値が0の箇所を1に変換する"""
+    out_ls = []
+
+    for i, val in enumerate(arr):
+        if (i==0)|(i==(len(arr)-1)):
+            out_ls.append(val)
+            continue
+        if (arr[i-1]==1)&(arr[i+1]==1):
+            out_ls.append(1)
+            continue
+        out_ls.append(val)
+    return np.array(out_ls)
