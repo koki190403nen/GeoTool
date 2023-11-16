@@ -9,17 +9,19 @@ if __name__=='__main__':
     from calc_sinh import calc_sinh
 else:
     from .calc_sinh import calc_sinh
-def DaylightOutsideTheAtmosphere(date:pd.Timestamp, lat:float, lon:float, Ls:int=0):
+def DaylightOutsideTheAtmosphere(date:pd.Timestamp, lat:float, lon:float, Ls:int=0, mode='radiation'):
     """指定地点・時刻の大気外全天日射量(W/m^2)を求める
 
     Args:
         date (pd.Timestamp): 指定時刻 (デフォルトではUTC)\n
         lat (float): 指定地点の緯度\n
         lon (float): 指定地点の軽度\n
-        Ls (int): 標準子午線の緯度\n
+        Ls (int): 標準子午線の経度\n
+        mode (str): 'radiation:だと大気外全天日射量, 'ppfd'だとPPFD
 
     Returns:
         Q: 大気外全天日射量 (W/m^2)
+        Q: 大気上端PPFD (μ mol m^-2 s^-1)
     """
     sinh = calc_sinh(
         lat=lat, lon=lon,
@@ -36,7 +38,10 @@ def DaylightOutsideTheAtmosphere(date:pd.Timestamp, lat:float, lon:float, Ls:int
 
 
     E0 = (1.000110 + 0.034221*np.cos(Gamma)+0.001280*np.sin(Gamma)+0.000719*np.cos(2*Gamma)+0.000077*np.sin(2*Gamma))
-    Q = 1367 * E0 * sinh
+    if      mode=='radiation':
+        Q = 1367 * E0 * sinh
+    elif    mode=='ppfd':
+        Q = 2405.13 * E0 * sinh
     return Q
 
 if __name__=='__main__':
