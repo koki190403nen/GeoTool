@@ -26,4 +26,4 @@ def Hedges_g(x1, x2):
 
     ci = (g-1.96*SD, g+1.96*SD)
 
-    return g, ci, SD
+    return g, ci

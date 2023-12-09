@@ -9,7 +9,7 @@ if __name__=='__main__':
     from calc_sinh import calc_sinh
 else:
     from .calc_sinh import calc_sinh
-def DaylightOutsideTheAtmosphere(date:pd.Timestamp, lat:float, lon:float, Ls:int=0, mode='radiation'):
+def DaylightOutsideTheAtmosphere(date:pd.Timestamp, lat:float, lon:float, Ls:int=135, mode='radiation'):
     """指定地点・時刻の大気外全天日射量(W/m^2)を求める
 
     Args:

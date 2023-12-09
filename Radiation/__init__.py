@@ -3,3 +3,4 @@ from .ProcessWsiImage import ProcessWsiImage, MultiWsiImage,get_circle_img, spli
 from .DaylightOutsideTheAtmosphere import DaylightOutsideTheAtmosphere
 from .calc_dailypar import calc_dailypar
 from .KawaiModel import *
+from .calc_E0 import calc_E0
