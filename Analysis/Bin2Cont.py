@@ -7,8 +7,13 @@ class Bin2Cont:
     def __init__(self, in_arr=None):
         """バイナリ時系列の連続具合を数値化する
 
+        Attributes:
+            in_arr  : 入力時系列バイナリ ([0,1,1,1,0,0,...])
+            serial  : 1の塊ごとに番号をふった配列 ([0,1,2,3,0,0,...])
+            inv_arr : 逆方向に番号を振った配列 ([0,3,2,1,0,0,...])
+
         Args:
-            in_arr (_type_): _description_
+            in_arr (Array Like): バイナリ形式の時系列配列
         """
         self.in_arr =in_arr
 
