@@ -17,7 +17,7 @@ def DaylightOutsideTheAtmosphere(date:pd.Timestamp, lat:float, lon:float, Ls:int
         lat (float): 指定地点の緯度\n
         lon (float): 指定地点の軽度\n
         Ls (int): 標準子午線の経度\n
-        mode (str): 'radiation:だと大気外全天日射量, 'ppfd'だとPPFD
+        mode (str): 'radiation:だと大気外全天日射量[W m-2], 'ppfd'だとPPFD[μmol m-2 s-1]
 
     Returns:
         Q: 大気外全天日射量 (W/m^2)
