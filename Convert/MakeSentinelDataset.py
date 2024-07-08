@@ -51,7 +51,7 @@ def MakeSentinelDataset(ori_zip_path, out_dir, use_bands=[2,3,4,8], resolution=1
     shutil.copy(cld_file_path, f'{out_product_dir}//CLDPRB.jp2')
     
     snw_file_path = glob.glob(f"{work_dir}//*//GRANULE//*//QI_DATA//MSK_SNWPRB_20m.jp2")[0]
-    shutil.copy(snw_file_path, f'{out_dir}//SNWPRB.jp2')
+    shutil.copy(snw_file_path, f'{out_product_dir}//SNWPRB.jp2')
 
     shutil.rmtree(work_dir)
     return out_product_dir
