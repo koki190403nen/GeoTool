@@ -9,85 +9,67 @@ import cv2
 
 # %%
 class MethodOfNDVI_GSI:
+
     def __init__(self):
-        self.r, self.g, self.b, self.nir = None, None, None, None
-        self.AA_area = None
+        pass
 
-    def fit(self, pre_bands, post_bands, mask=None):
-        self.set_mask(mask)
-        pre_veg_area  = self.extract_veg_area(*pre_bands)
-        post_bare_area = self.extract_bare_area(*post_bands)
-
-        self.AA_area = np.where(np.isnan(pre_veg_area)|np.isnan(post_bare_area), np.nan, self.preprocess(((pre_veg_area==1)&(post_bare_area==1)).astype(np.uint8))).astype(np.float32)
-        return self.AA_area
-
-
-    def extract_veg_area(self, r, g, b, nir):
-        self.set_bands(r,g,b,nir)
-        ndvi, gsi = self.calc_indices()
-
-        ndvi_bin  = self.make_binary(ndvi)
-        gsi_bin   = self.make_binary(gsi)
-        
-        veg_area = np.where(np.isnan(ndvi_bin)|np.isnan(gsi_bin), np.nan, (ndvi_bin==1)&(gsi_bin==0)).astype(np.float32)
-        return veg_area
-    
-    def extract_bare_area(self, r,g,b,nir):
-        self.set_bands(r,g,b,nir)
-        ndvi, gsi = self.calc_indices()
-
-        ndvi_bin  = self.make_binary(ndvi)
-        gsi_bin   = self.make_binary(gsi)
-        
-        bare_area = np.where(np.isnan(ndvi_bin)|np.isnan(gsi_bin), np.nan, (ndvi_bin==0)&(gsi_bin==1)).astype(np.float32)
-        return bare_area
-
-
-    def calc_indices(self):
-        ndvi = (self.nir - self.r) / (self.nir + self.r)
-        gsi  = (self.r - self.b) / (self.r + self.g + self.b)
-        return ndvi, gsi
-
-
-
-    def set_bands(self, r, g, b, nir):
-        self.r      = r.astype(np.float32)
-        self.g      = g.astype(np.float32)
-        self.b      = b.astype(np.float32)
-        self.nir    = nir.astype(np.float32)
-    
-    def set_mask(self, mask=None):
-        self.mask   = mask.astype(np.float32) if mask is not None else np.ones_like(self.r)
-
-
-
-
-    
-    def calc_gsi(self):
-        gsi = (self.r - self.b) / (self.r + self.g + self.b)
-        return gsi
-    
-    def make_binary(self, idx):
-        """-1 ~ 1(dtype: float) を 大津の二値化にかける。
+    def fit(self, pre_bands, post_bands, mask_img=None, lower_p=1, upper_p=99):
+        """NDVI-GSI法により、人工改変箇所を抽出する
 
         Args:
-            idx (Array like, dtype: float): ある指標値 (範囲: -1 ~ 1)
-        Returns:
-            bin_img (Array like, dtype:float32): 大津の二値化によりバイナリ化された画像 (0: 閾値以下, 1: 閾値より大, nan: マスク部)
+            pre_bands (set, Array like): 改変前バンドの組み合わせ (r,g,b,nir)
+            post_bands(set, Array like): 改変後バンドの組み合わせ (r,g,b,nir)
+            mask_img  (Array like): マスク画像 有効部分が1, 無効部分がnp.nan
+            lower_p (int): uint8変換時の下限 (%ile). Defaults to 1.
+            upper_p (int): uint8変換時の上限 (%ile). Defaults to 99.
         """
+        self.mask_img = np.where(mask_img==1, 1, np.nan)
+        self.calc_idxes(pre_bands, post_bands)
+        self.calc_binary(lower_p, upper_p)
 
-        # スケーリング部分
-        min, max = np.percentile(idx[~np.isnan(idx)], 1), np.percentile(idx[~np.isnan(idx)], 99)
-        idx_uint8 = ((idx - min) / (max - min) * 255).astype(np.uint8)
+        self.pre_vegarea   = ((self.pre_ndvi_bin==1) & (self.pre_gsi_bin==0)) .astype(np.uint8)
+        self.post_barearea = ((self.post_ndvi_bin==0)& (self.post_gsi_bin==1)).astype(np.uint8)
 
-        threshold, _ = cv2.threshold(idx_uint8[self.mask==1], 0, 255, cv2.THRESH_OTSU)
+        self.AAarea = (self.pre_vegarea==1) & (self.post_barearea==1)
+        return self.AAarea
+        
 
-        bin_img = np.where(self.mask!=1, np.nan, np.where(idx_uint8>threshold, 1, 0)).astype(np.float32)
-        return bin_img
+    def calc_idxes(self, pre_bands, post_bands):
+        """改変前後のNDVIとGSIを求める
 
-    def preprocess(self, bin_img, min_pix=5):
-        id_size, labeled_img = cv2.connectedComponents(bin_img)
-        id_arr , area_arr    = np.unique(labeled_img, return_counts=True)
-        area_img             = area_arr[labeled_img]
-        preprocessed_img = np.where(area_img==np.nanmax(area_img), 0, np.where(area_img<min_pix, 0, 1))
-        return preprocessed_img
+        Args:
+            pre_bands (set, Array like): 改変前バンドの組み合わせ (r,g,b,nir)
+            post_bands(set, Array like): 改変後バンドの組み合わせ (r,g,b,nir)
+        """
+        r,g,b,nir=pre_bands
+        self.pre_ndvi = (nir-r) / (nir+r)
+        self.pre_gsi  = (r-b) / (r+g+b)
+
+        r,g,b,nir = post_bands
+        self.post_ndvi = (nir-r) / (nir+r)
+        self.post_gsi  = (r-b) / (r+g+b)
+
+    def convert_uint8(self, img, lower_p=1, upper_p=99):
+        lower = np.percentile(img[~np.isnan(img)], lower_p)
+        upper = np.percentile(img[~np.isnan(img)], upper_p)
+
+        Relu_pls = lambda x:np.where(x<lower, 0, np.where(x>upper, 1, x))
+        img_uint8 = (Relu_pls(img)*255).astype(np.uint8)
+        return img_uint8
+
+    def calc_binary(self, lower_p=1, upper_p=99):
+        pre_ndvi_uint8 = self.convert_uint8(self.pre_ndvi, lower_p, upper_p)
+        threshold, _ = cv2.threshold(pre_ndvi_uint8[self.mask_img==1], 0, 255, cv2.THRESH_OTSU)
+        self.pre_ndvi_bin = (pre_ndvi_uint8>threshold).astype(np.uint8)
+
+        post_ndvi_uint8 = self.convert_uint8(self.post_ndvi, lower_p, upper_p)
+        threshold, _ = cv2.threshold(post_ndvi_uint8[self.mask_img==1], 0, 255, cv2.THRESH_OTSU)
+        self.post_ndvi_bin = (post_ndvi_uint8>threshold).astype(np.uint8)
+
+        pre_gsi_uint8 = self.convert_uint8(self.pre_gsi, lower_p, upper_p)
+        threshold, _ = cv2.threshold(pre_gsi_uint8[self.mask_img==1], 0, 255, cv2.THRESH_OTSU)
+        self.pre_gsi_bin = (pre_gsi_uint8>threshold).astype(np.uint8)
+
+        post_gsi_uint8 = self.convert_uint8(self.post_gsi, lower_p, upper_p)
+        threshold, _ = cv2.threshold(post_gsi_uint8[self.mask_img==1], 0, 255, cv2.THRESH_OTSU)
+        self.post_gsi_bin = (post_gsi_uint8>threshold).astype(np.uint8)
