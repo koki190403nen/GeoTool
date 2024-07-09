@@ -1,0 +1,21 @@
+#!/usr/bin/env python3 
+# -*- coding: utf-8 -*-
+# MakeProjectDirectory.py: 自分用のプロジェクトディレクトリを作成する
+
+# %%
+import os
+def MakeProjectDirectory():
+    os.makedirs(f'.//01_協議資料', exist_ok=True)
+    os.makedirs(f'.//02_DATA', exist_ok=True)
+    os.makedirs(f'.//03_codes', exist_ok=True)
+    os.makedirs(f'.//04_QGIS', exist_ok=True)
+    os.makedirs(f'.//05_解析結果', exist_ok=True)
+    os.makedirs(f'.//99_その他', exist_ok=True)
+
+    [os.makedirs(f'.//02_DATA//Level{i}', exist_ok=True) for i in range(4)]
+
+    with open(f'.//test.py', 'w') as f:
+        pass
+    with open(f'.//test2.py', 'w') as f:
+        pass
+
