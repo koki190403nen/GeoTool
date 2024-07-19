@@ -11,6 +11,7 @@ import cv2
 class MethodOfNDVI_GSI:
 
     def __init__(self):
+        self.thresholds={}
         pass
 
     def fit(self, pre_bands, post_bands, mask_img=None, lower_p=1, upper_p=99):
@@ -30,7 +31,7 @@ class MethodOfNDVI_GSI:
         self.pre_vegarea   = ((self.pre_ndvi_bin==1) & (self.pre_gsi_bin==0)) .astype(np.uint8)
         self.post_barearea = ((self.post_ndvi_bin==0)& (self.post_gsi_bin==1)).astype(np.uint8)
 
-        self.AAarea = (self.pre_vegarea==1) & (self.post_barearea==1)
+        self.AAarea = ((self.pre_vegarea==1) & (self.post_barearea==1)).astype(np.uint8)
         return self.AAarea
         
 
