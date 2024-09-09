@@ -20,14 +20,24 @@ def arr2tif(
         geotrans (set(lon, Δlon, 0, lat, 0, -Δlat)): 左上ピクセルの座標情報\n
         projection (int or str): 座標系.int型ならEPSGコード,strならWktコード. Defaults to 4326.
     """
-
-    cols, rows = arr.shape[1], arr.shape[0]
+    
+    rows, cols = arr.shape[0], arr.shape[1]
+    if arr.ndim==3:
+        n_bands = arr.shape[2]
+    elif arr.ndim==2:
+        n_bands = 1
     driver = gdal.GetDriverByName('GTiff')
     gdal_type = gdal_array.NumericTypeCodeToGDALTypeCode(arr.dtype)  # numpy.dtype をgdal.DataTypeに変換
-    outRaster = driver.Create(out_file_path, cols, rows, 1, gdal_type)
+    outRaster = driver.Create(out_file_path, cols, rows, n_bands, gdal_type)
     outRaster.SetGeoTransform(geotrans)
-    outband = outRaster.GetRasterBand(1)
-    outband.WriteArray(arr)
+
+    if arr.ndim==2:
+        outband = outRaster.GetRasterBand(1)
+        outband.WriteArray(arr)
+    elif arr.ndim==3:
+        for i in range(arr.shape[2]):
+            outband = outRaster.GetRasterBand(i+1)
+            outband.WriteArray(arr[:,:,i])
 
     # projectionがEPSGコードだった場合の処理
     if type(projection) is int:
