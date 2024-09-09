@@ -8,3 +8,4 @@ from .MergeTrans import MergeTrans
 from .MakeSentinelDataset import MakeSentinelDataset
 from .MakeProjectDirectory import MakeProjectDirectory
 from .geotrans2extent import geotrans2extent
+from .VisualInspectionMaterials import VisualInspectinMaterials
