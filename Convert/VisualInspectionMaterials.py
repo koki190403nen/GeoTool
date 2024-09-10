@@ -46,12 +46,12 @@ class VisualInspectinMaterials:
             'add_suptxts':['LULC_code']
         }
 
-    def out_1page(self, id):
+    def out_1page(self, id, it):
         self.plot_1pdf()
         self.plot_mapping(id)
         self.plot_png(id)
         self.set_axis_txts()
-        self.set_suptxt(id)
+        self.set_suptxt(id, it)
 
 
     def fit(self, vector_path, raster_path, out_pdf_path=None, working_dir_path='./working/', id_title='id', png=False):
@@ -64,14 +64,14 @@ class VisualInspectinMaterials:
 
         pbar = tqdm.tqdm(total=len(self.point_gdf[id_title]))
         if png:
-            for id in self.point_gdf[id_title]:
-                self.out_1page(id)
+            for it, id in enumerate(self.point_gdf[id_title]):
+                self.out_1page(id, it)
                 self.fig.savefig(f'{working_dir_path}/ID{id}.png')
                 pbar.update(1)
             pbar.close()
             return
-        for id in self.point_gdf[id_title]:
-            self.out_1page(id)
+        for it, id in enumerate(self.point_gdf[id_title]):
+            self.out_1page(id, it)
             self.fig.savefig(F'{working_dir_path}/ID{id}.pdf')
             pbar.update(1)
         pbar.close()
@@ -156,8 +156,8 @@ class VisualInspectinMaterials:
                 self.axes[row, col].set_axis_off()
             self.axes[row, col].text(0.99, 0.02, self.txt_params['credits'][i], transform=self.axes[row, col].transAxes, ha='right', fontsize=5)
 
-    def set_suptxt(self, id):
-        self.fig.suptitle(f'抽出箇所の変化確認資料 {id}/{self.point_gdf.shape[0]}')
+    def set_suptxt(self, id, it):
+        self.fig.suptitle(f'抽出箇所の変化確認資料 {it}/{self.point_gdf.shape[0]}')
 
         geo_items = self.point_gdf.query(f"{self.id_title}=={id}")
 
