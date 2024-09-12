@@ -9,6 +9,7 @@ import os, glob, shutil
 import pypdf
 
 from .geotrans2extent import geotrans2extent
+import warnings;warnings.simplefilter('ignore')
 
 
 # %%
@@ -16,6 +17,7 @@ class VisualInspectinMaterials:
     def __init__(self):
         """目視確認資料の作成 (3行x2列で構成)
         """
+        self.fig, self.axes = None, None
         self.txt_params = {
             'axis_titles':{
                 1: '国土地理院地形図',
@@ -90,10 +92,14 @@ class VisualInspectinMaterials:
     def plot_1pdf(self):
         """pdf1ページ分を作成する
         """
+        if self.fig is not None:
+            del self.fig, self.axes
+        
         plt.cla()
         plt.rcParams['font.family'] = 'Meiryo'
+        plt.rcParams['font.size'] = 8
         self.fig, self.axes = plt.subplots(3,2, figsize=(8.27, 11.69), dpi=150)
-        plt.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.20, hspace=0.1, wspace=0.02)
+        plt.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.20, hspace=0.15, wspace=0.02)
 
 
     def set_mapping(self, vector_path, raster_path, id_title='id'):
@@ -107,10 +113,11 @@ class VisualInspectinMaterials:
         """
         self.id_title = id_title
         self.point_gdf = gpd.read_file(vector_path).to_crs(epsg=4326)
+        self.point_gdf[id_title] = self.point_gdf[id_title].astype(str)
         src = gdal.Open(raster_path)
         img = src.ReadAsArray().transpose((1,2,0))
         h,w = img.shape[0], img.shape[1]
-        self.raster_img = np.where(np.isnan(img), 255, img).astype(int)
+        self.raster_img = np.where(np.isnan(img), 255, img).astype(np.uint8)
         
         self.raster_extent = geotrans2extent(src.GetGeoTransform(), h,w)
         del src
@@ -123,13 +130,13 @@ class VisualInspectinMaterials:
             id (int): 指定ID
         """
         self.point_gdf.plot(ax=self.axes[0,0], color='yellow', markersize=10)
-        self.point_gdf.query(f'{self.id_title}=={id}').plot(ax=self.axes[0,0], color='blue', markersize=200, marker='*')
+        self.point_gdf.query(f'{self.id_title}=="{id}"').plot(ax=self.axes[0,0], color='blue', markersize=200, marker='*')
         self.axes[0,0].imshow(self.raster_img, extent=self.raster_extent)
         self.axes[0,0].grid(alpha=0.5)
 
         # フォントサイズの設定
-        self.axes[0,0].set_xticklabels(self.axes[0,0].get_xticklabels(), fontsize='x-small')
-        self.axes[0,0].set_yticklabels(self.axes[0,0].get_yticklabels(), fontsize='x-small')
+        #self.axes[0,0].set_xticklabels(self.axes[0,0].get_xticklabels(), fontsize='x-small')
+        #self.axes[0,0].set_yticklabels(self.axes[0,0].get_yticklabels(), fontsize='x-small')
     
     def plot_png(self, id):
         """self.txt_params['in_dir_paths']で指定したaxesにjpg/png画像を挿入する
@@ -152,22 +159,26 @@ class VisualInspectinMaterials:
             row, col = i//2, i%2
         
             if i!=0:
-                self.axes[row, col].set_title(self.txt_params['axis_titles'][i], y=-0.15)
+                self.axes[row, col].set_title(self.txt_params['axis_titles'][i], y=-0.10)
                 self.axes[row, col].set_axis_off()
             self.axes[row, col].text(0.99, 0.02, self.txt_params['credits'][i], transform=self.axes[row, col].transAxes, ha='right', fontsize=5)
 
     def set_suptxt(self, id, it):
-        self.fig.suptitle(f'抽出箇所の変化確認資料 {it}/{self.point_gdf.shape[0]}')
+        self.fig.suptitle(f'抽出箇所の変化確認資料 {it+1}/{self.point_gdf.shape[0]}')
 
-        geo_items = self.point_gdf.query(f"{self.id_title}=={id}")
+        geo_items = self.point_gdf.query(f'{self.id_title}=="{id}"')
+
+
+        area_size = geo_items[self.txt_params["suptxts"]["area"]].values[0]
+        area_size = format(int(area_size), ",") if type(area_size) is int else area_size
 
         detail_txts = f'ID：{id}'+\
             f'\n住所：{geo_items[self.txt_params["suptxts"]["address"]].values[0]}'+\
             f'\n座標：{geo_items.geometry.x.round(3).values[0]}°N, {geo_items.geometry.x.round(3).values[0]}°E'+\
-            f'\n抽出面積：{format(geo_items["area"].astype(int).values[0], ",")}$m^2$,'
+            f'\n抽出面積：{area_size}$m^2$,'
 
 
-        if self.txt_params['add_suptxts'] is not None:
+        if 'add_suptxts' in self.txt_params.keys():
             for t in self.txt_params['add_suptxts']:
                 detail_txts += f'\n{t}：{geo_items[t].values[0]}'
 
