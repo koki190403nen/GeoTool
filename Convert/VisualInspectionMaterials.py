@@ -18,6 +18,8 @@ class VisualInspectinMaterials:
         """目視確認資料の作成 (3行x2列で構成)
         """
         self.fig, self.axes = None, None
+        self.raster_img = None
+
         self.txt_params = {
             'axis_titles':{
                 1: '国土地理院地形図',
@@ -49,7 +51,6 @@ class VisualInspectinMaterials:
         }
 
     def out_1page(self, id, it):
-        self.plot_1pdf()
         self.plot_mapping(id)
         self.plot_png(id)
         self.set_axis_txts()
@@ -62,19 +63,15 @@ class VisualInspectinMaterials:
         os.makedirs(working_dir_path, exist_ok=True)  # 一次ファイル出力先ディレクトリ
         
         self.set_mapping(vector_path=vector_path, raster_path=raster_path, id_title=id_title)
+        self.set_figure()
         
 
         pbar = tqdm.tqdm(total=len(self.point_gdf[id_title]))
-        if png:
-            for it, id in enumerate(self.point_gdf[id_title]):
-                self.out_1page(id, it)
-                self.fig.savefig(f'{working_dir_path}/ID{id}.png')
-                pbar.update(1)
-            pbar.close()
-            return
+        ext = 'png' if png is True else 'pdf'
         for it, id in enumerate(self.point_gdf[id_title]):
+            plt.cla()
             self.out_1page(id, it)
-            self.fig.savefig(F'{working_dir_path}/ID{id}.pdf')
+            plt.savefig(f'{working_dir_path}/ID{id}.{ext}')
             pbar.update(1)
         pbar.close()
 
@@ -89,13 +86,12 @@ class VisualInspectinMaterials:
 
     #### 複数枚を同時実行する関数を作成する
 
-    def plot_1pdf(self):
-        """pdf1ページ分を作成する
+    def set_figure(self):
+        """pdf1ページ分のfigureを作成する
         """
         if self.fig is not None:
             del self.fig, self.axes
         
-        plt.cla()
         plt.rcParams['font.family'] = 'Meiryo'
         plt.rcParams['font.size'] = 8
         self.fig, self.axes = plt.subplots(3,2, figsize=(8.27, 11.69), dpi=150)
@@ -111,6 +107,7 @@ class VisualInspectinMaterials:
             id_title (str): 読み込んだベクターデータのID列の列名。 Defaults to 'id'.
 
         """
+
         self.id_title = id_title
         self.point_gdf = gpd.read_file(vector_path).to_crs(epsg=4326)
         self.point_gdf[id_title] = self.point_gdf[id_title].astype(str)
