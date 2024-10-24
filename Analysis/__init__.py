@@ -8,3 +8,4 @@ from .Bin2Cont import Bin2Cont
 from .Bin2Cont import osero
 from .MethodOfNDVI_GSI import *
 from .SizeFilter import *
+from .CheckSuperimposion import CheckSuperimposion

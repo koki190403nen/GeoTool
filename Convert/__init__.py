@@ -11,3 +11,4 @@ from .geotrans2extent import geotrans2extent
 from .VisualInspectionMaterials import VisualInspectinMaterials
 from .CalcVelocityFromGeoDataFrame import CalcVelocityFromGeoDataFrame
 from .Gpx2GeoDataFrame import Gpx2GeoDataFrame
+from .vec2ras import vec2ras
