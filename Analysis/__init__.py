@@ -9,3 +9,4 @@ from .Bin2Cont import osero
 from .MethodOfNDVI_GSI import *
 from .SizeFilter import *
 from .CheckSuperimposion import CheckSuperimposion
+from .ReGeocoding import ReGeocoding
