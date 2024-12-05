@@ -10,5 +10,5 @@ from .MethodOfNDVI_GSI import *
 from .SizeFilter import *
 from .CheckSuperimposion import CheckSuperimposion
 from .ReGeocoding import ReGeocoding
-from RGB2HSI import *
-from HSI2RGB import *
+from .RGB2HSI import *
+from .HSI2RGB import *
